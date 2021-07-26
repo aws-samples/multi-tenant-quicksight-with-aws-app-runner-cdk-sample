@@ -103,7 +103,7 @@ npx cdk deploy AppRunnerStack
 QuickSight から埋め込みの許可設定を行います。AWS Console から QuickSight に接続して、
 `Manage QuickSight` から `Domains and Embedding` を選びます。表示されるフォームに `AppRunnerStack` をデプロイした後表示される URL を入力し、追加してください。
 
-> Outputs:
+> Outputs:  
 > AppRunnerStack.AppRunnerStackapprunneruri = https://example.region.awsapprunner.com
 
 完了後、ブラウザから追加した URL アクセスします。
