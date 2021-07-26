@@ -1,0 +1,25 @@
+{
+  "private": true,
+  "devDependencies": {
+    "@aws-cdk/assert": "1.111.0",
+    "@types/jest": "^26.0.24",
+    "@types/node": "^16.0.0",
+    "aws-cdk": "^1.111.0",
+    "jest": "^27.0.6",
+    "ts-jest": "^27.0.3",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-apprunner": "1.111.0",
+    "@aws-cdk/aws-athena": "1.111.0",
+    "@aws-cdk/aws-ec2": "1.111.0",
+    "@aws-cdk/aws-glue": "1.111.0",
+    "@aws-cdk/aws-iam": "1.111.0",
+    "@aws-cdk/aws-rds": "1.111.0",
+    "@aws-cdk/aws-s3": "1.111.0",
+    "@aws-cdk/aws-s3-assets": "1.111.0",
+    "@aws-cdk/core": "1.111.0",
+    "source-map-support": "^0.5.16"
+  }
+}

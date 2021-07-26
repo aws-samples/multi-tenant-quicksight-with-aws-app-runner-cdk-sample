@@ -1,0 +1,310 @@
+<head>
+  <title>MULTI-TENANT QUICKSIGHT APP RUNNER SAMPLE CDK</title>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/amazon-quicksight-embedding-sdk@1.0.15/dist/quicksight-embedding-js-sdk.min.js"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css"
+  />
+</head>
+
+<body>
+  <nav class="navbar is-link">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="/" style="font-size: 1.3em">
+        MULTI-TENANT QUICKSIGHT APP RUNNER SAMPLE CDK
+      </a>
+    </div>
+    <div class="navbar-end">
+      <div class="navbar-item">
+        <div class="field is-grouped">
+          <div class="control">
+            <div style="margin-top: 0.15rem">Namespace :</div>
+          </div>
+          <div class="control">
+            <div class="select is-info is-small">
+              <select id="namespace" onchange="changeNamespace()">
+                <option disabled selected value>Select Namespace</option>
+              </select>
+            </div>
+          </div>
+          <div class="control">
+            <button class="button is-info is-small" onclick="addNamespace()">
+              Add
+            </button>
+          </div>
+          <div class="control">
+            <button
+              class="button is-danger is-small"
+              onclick="deleteNamespace()"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="navbar-item">
+        <div class="field is-grouped">
+          <div class="control">
+            <div style="margin-top: 0.15rem">User :</div>
+          </div>
+          <div class="control">
+            <div class="select is-info is-small">
+              <select id="user" onchange="changeUser()">
+                <option disabled selected value>Select User</option>
+              </select>
+            </div>
+          </div>
+          <div class="control">
+            <button class="button is-info is-small" onclick="addUser()">
+              Add
+            </button>
+          </div>
+          <div class="control">
+            <button class="button is-danger is-small" onclick="deleteUser()">
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div id="dashboardContainer"></div>
+  <div id="loadedContainer"></div>
+  <div id="errorContainer"></div>
+
+  <div class="modal" id="modal">
+    <div class="modal-background"></div>
+    <div class="modal-content">
+      <div
+        class="loader is-loading"
+        style="height: 6em; width: 6em; margin-left: auto; margin-right: auto"
+      ></div>
+    </div>
+    <button
+      class="modal-close is-large"
+      aria-label="close"
+      onclick="loading.stop()"
+    ></button>
+  </div>
+</body>
+
+<script>
+  const loading = {
+    start: () => document.querySelector('#modal').classList.add('is-active'),
+    stop: () => document.querySelector('#modal').classList.remove('is-active')
+  }
+
+  // initialize namespace selector
+  const initialize = async () => {
+    try {
+      const nsSelector = document.querySelector('#namespace')
+      const res = await axios.get('/namespaces')
+
+      for (const ns of res.data.Namespaces) {
+        if (ns.CreationStatus === 'CREATED' && ns.Name !== 'default') {
+          const option = document.createElement('option')
+          option.text = ns.Name
+          option.value = ns.Name
+          nsSelector.appendChild(option)
+        }
+      }
+    } catch (err) {
+      console.error(err)
+      alert(err.message)
+    }
+  }
+
+  initialize()
+
+  // update user selector when change namespace
+  const changeNamespace = async () => {
+    try {
+      const userSelector = document.querySelector('#user')
+      userSelector.innerHTML = `<option disabled selected value>Select User</option>`
+
+      const container = document.querySelector('#dashboardContainer')
+      container.innerHTML = ''
+
+      const nsSelector = document.querySelector('#namespace')
+      const selectedNs = nsSelector.options[nsSelector.selectedIndex].value
+
+      const res = await axios.get(`/namespaces/${selectedNs}/users`)
+
+      for (const user of res.data.GroupMemberList) {
+        const option = document.createElement('option')
+        option.text = user.MemberName
+        option.value = user.MemberName
+        userSelector.appendChild(option)
+      }
+    } catch (err) {
+      console.error(err)
+      alert(err.message)
+    }
+  }
+
+  const addNamespace = async () => {
+    try {
+      const ns = window.prompt('Enter new namespace: ^[0-9a-Z-_]+$', '')
+
+      if (/^[0-9a-zA-Z\-_]+$/.test(ns) === false) {
+        alert('invalid namespace')
+        return
+      }
+
+      const container = document.querySelector('#dashboardContainer')
+      container.innerHTML = ''
+
+      loading.start()
+      await axios.post('/namespaces/', {
+        namespaceId: ns,
+        namespaceFilterId: ns
+      })
+      loading.stop()
+
+      const nsSelector = document.querySelector('#namespace')
+      const option = document.createElement('option')
+      option.text = ns
+      option.value = ns
+      nsSelector.appendChild(option)
+      nsSelector.selectedIndex = nsSelector.length - 1
+
+      const userSelector = document.querySelector('#user')
+      userSelector.innerHTML = `<option disabled selected value>Select User</option>`
+      userSelector.selectedIndex = 0
+    } catch (err) {
+      loading.stop()
+      console.error(err)
+      alert(err.message)
+    }
+  }
+
+  const deleteNamespace = async () => {
+    try {
+      const nsSelector = document.querySelector('#namespace')
+      if (nsSelector.selectedIndex === 0) return
+      const selectedNs = nsSelector.options[nsSelector.selectedIndex].value
+
+      loading.start()
+      await axios.delete(`/namespaces/${selectedNs}`)
+      loading.stop()
+
+      const userSelector = document.querySelector('#user')
+      userSelector.innerHTML = `<option disabled selected value>Select User</option>`
+      userSelector.selectedIndex = 0
+
+      const container = document.querySelector('#dashboardContainer')
+      container.innerHTML = ''
+
+      nsSelector.removeChild(
+        nsSelector.querySelector(`option[value="${selectedNs}"]`)
+      )
+      nsSelector.selectedIndex = 0
+    } catch (err) {
+      loading.stop()
+      console.error(err)
+      alert(err.message)
+    }
+  }
+
+  const addUser = async () => {
+    try {
+      const nsSelector = document.querySelector('#namespace')
+      if (nsSelector.selectedIndex === 0) return
+      const selectedNs = nsSelector.options[nsSelector.selectedIndex].value
+
+      const userId = window.prompt('Enter new username: ^[0-9a-Z-_]+$', '')
+
+      if (/^[0-9a-zA-Z\-_]+$/.test(userId) === false) {
+        alert('invalid username')
+        return
+      }
+
+      loading.start()
+      await axios.post(`/namespaces/${selectedNs}/users`, {
+        userId: userId
+      })
+      loading.stop()
+
+      const userSelector = document.querySelector('#user')
+      const option = document.createElement('option')
+      option.text = userId
+      option.value = userId
+      userSelector.appendChild(option)
+      userSelector.selectedIndex = userSelector.length - 1
+
+      changeUser()
+    } catch (err) {
+      loading.stop()
+      console.error(err)
+      alert(err.message)
+    }
+  }
+
+  const deleteUser = async () => {
+    try {
+      const nsSelector = document.querySelector('#namespace')
+      const userSelector = document.querySelector('#user')
+
+      if (nsSelector.selectedIndex === 0 || userSelector.selectedIndex === 0) {
+        return
+      }
+
+      const selectedNs = nsSelector.options[nsSelector.selectedIndex].value
+      const selectedUser =
+        userSelector.options[userSelector.selectedIndex].value
+
+      loading.start()
+      await axios.delete(`/namespaces/${selectedNs}/users/${selectedUser}`)
+      loading.stop()
+
+      userSelector.removeChild(
+        userSelector.querySelector(`option[value="${selectedUser}"]`)
+      )
+      userSelector.selectedIndex = 0
+
+      const container = document.querySelector('#dashboardContainer')
+      container.innerHTML = ''
+    } catch (err) {
+      loading.stop()
+      console.error(err)
+      alert(err.message)
+    }
+  }
+
+  const changeUser = async () => {
+    try {
+      const nsSelector = document.querySelector('#namespace')
+      const userSelector = document.querySelector('#user')
+
+      if (nsSelector.selectedIndex === 0 || userSelector.selectedIndex === 0) {
+        return
+      }
+
+      const selectedNs = nsSelector.options[nsSelector.selectedIndex].value
+      const selectedUser =
+        userSelector.options[userSelector.selectedIndex].value
+
+      const res = await axios.get(
+        `/namespaces/${selectedNs}/users/${selectedUser}/dashboard`
+      )
+
+      const container = document.querySelector('#dashboardContainer')
+      container.innerHTML = ''
+
+      const dashboard = QuickSightEmbedding.embedDashboard({
+        url: res.data.EmbedUrl,
+        container: container,
+        locale: 'ja-JP',
+        height: 'AutoFit',
+        footerPaddingEnabled: true
+      })
+
+      dashboard.on('error', (err) => alert(err))
+    } catch (err) {
+      console.error(err)
+      alert(err.message)
+    }
+  }
+</script>
